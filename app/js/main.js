@@ -10,10 +10,10 @@ var Main = function( options ) {
 
 	this.mouseIsDown = 0;
 
-	this.buffer0 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
-	this.buffer1 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
-	this.bufferA = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
-	this.bufferB = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
+	this.buffer0 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
+	this.buffer1 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
+	this.bufferA = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
+	this.bufferB = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
 
 	// buffer A
 	this.bufferAscene = new THREE.Scene();
@@ -120,36 +120,27 @@ Main.prototype.resize = function( e ) {
 Main.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
 
-	//aproach 3
 	var n = this.bufferAplane.material.uniforms.frame.value;
 
 	if( n === 0 || !!( n && !(n%2))) {
 		this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer0 );
 		this.bufferAplane.material.uniforms.iChannel0.value = this.buffer0.texture;
 		this.bufferAplane.material.uniforms.iChannel1.value = this.bufferB.texture;
-		// this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
+
+		this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
+		this.bufferBplane.material.uniforms.iChannel0.value = this.bufferB.texture;
+		this.bufferBplane.material.uniforms.iChannel1.value = this.bufferA.texture;
 	} else {
 		this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
 		this.bufferAplane.material.uniforms.iChannel0.value = this.bufferA.texture;
 		this.bufferAplane.material.uniforms.iChannel1.value = this.buffer1.texture;
-		// this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer0 );
-	}
 
-	this.bufferAplane.material.uniforms.frame.value += 1;
-
-	if( n === 0 || !!( n && !(n%2))) {
-		this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
-		this.bufferBplane.material.uniforms.iChannel0.value = this.bufferB.texture;
-		this.bufferBplane.material.uniforms.iChannel1.value = this.bufferA.texture;
-		// this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer1 );
-	} else {
 		this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer1 );
 		this.bufferBplane.material.uniforms.iChannel0.value = this.buffer1.texture;
 		this.bufferBplane.material.uniforms.iChannel1.value = this.buffer0.texture;
-		// this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
-		
 	}
 
+	this.bufferAplane.material.uniforms.frame.value += 1;
 	this.bufferBplane.material.uniforms.frame.value += 1;
 
 	
