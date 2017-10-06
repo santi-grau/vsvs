@@ -40,7 +40,7 @@ var Main = function( options ) {
 	var geometry = new THREE.PlaneBufferGeometry( this.element.offsetWidth, this.element.offsetHeight );
 	var material = new THREE.ShaderMaterial( {
 		uniforms: {
-			iChannel0: { value: this.bufferB.texture },
+			iChannel0: { value: this.buffer1.texture },
 			iChannel1: { value: this.bufferA.texture },
 			frame: { value: 0.0 },
 			resolution: { value: new THREE.Vector2( this.element.offsetWidth, this.element.offsetHeight ) },
@@ -81,18 +81,24 @@ var Main = function( options ) {
 
 Main.prototype.onMousedown = function( e ){
 	this.mouseIsDown = 1;
+	this.updateMouseUniforms();
 }
 
 Main.prototype.onMouseup = function( e ){
 	this.mouseIsDown = 0;
+	this.updateMouseUniforms();
 }
 
 Main.prototype.onMousemove = function( e ){
 	// console.log(e.offsetX, e.offsetY)
-	var x = e.offsetX;
-	var y = Math.abs( e.offsetY - this.element.offsetHeight );
-	this.bufferAplane.material.uniforms.iMouse.value = new THREE.Vector3( x, y, this.mouseIsDown );
-	this.bufferBplane.material.uniforms.iMouse.value = new THREE.Vector3( x, y, this.mouseIsDown );
+	this.mouseX = e.offsetX;
+	this.mouseY = Math.abs( e.offsetY - this.element.offsetHeight );
+	this.updateMouseUniforms();
+}
+
+Main.prototype.updateMouseUniforms = function( ){
+	this.bufferAplane.material.uniforms.iMouse.value = new THREE.Vector3( this.mouseX, this.mouseY, this.mouseIsDown );
+	this.bufferBplane.material.uniforms.iMouse.value = new THREE.Vector3( this.mouseX, this.mouseY, this.mouseIsDown );
 }
 
 Main.prototype.resize = function( e ) {
@@ -113,28 +119,38 @@ Main.prototype.resize = function( e ) {
 
 Main.prototype.step = function( time ) {
 	window.requestAnimationFrame( this.step.bind( this ) );
-	
+
+	//aproach 3
 	var n = this.bufferAplane.material.uniforms.frame.value;
 
 	if( n === 0 || !!( n && !(n%2))) {
-		this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer0 );
-		this.bufferBplane.material.uniforms.iChannel0.value = this.buffer0.texture;
+		this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer0 );
+		this.bufferAplane.material.uniforms.iChannel0.value = this.buffer0.texture;
+		this.bufferAplane.material.uniforms.iChannel1.value = this.bufferB.texture;
+		// this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
+	} else {
+		this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
+		this.bufferAplane.material.uniforms.iChannel0.value = this.bufferA.texture;
+		this.bufferAplane.material.uniforms.iChannel1.value = this.buffer1.texture;
+		// this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer0 );
+	}
+
+	this.bufferAplane.material.uniforms.frame.value += 1;
+
+	if( n === 0 || !!( n && !(n%2))) {
+		this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
+		this.bufferBplane.material.uniforms.iChannel0.value = this.bufferB.texture;
+		this.bufferBplane.material.uniforms.iChannel1.value = this.bufferA.texture;
+		// this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer1 );
 	} else {
 		this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer1 );
 		this.bufferBplane.material.uniforms.iChannel0.value = this.buffer1.texture;
+		this.bufferBplane.material.uniforms.iChannel1.value = this.buffer0.texture;
+		// this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
+		
 	}
-	this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
+
 	this.bufferBplane.material.uniforms.frame.value += 1;
-	
-	if( n === 0 || !!( n && !(n%2))) {
-		this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer0 );
-		this.bufferAplane.material.uniforms.iChannel0.value = this.buffer0.texture;
-	} else {
-		this.renderer.render( this.bufferAscene, this.bufferAcam, this.buffer1 );
-		this.bufferAplane.material.uniforms.iChannel0.value = this.buffer1.texture;
-	}
-	this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
-	this.bufferAplane.material.uniforms.frame.value += 1;
 
 	
 	
