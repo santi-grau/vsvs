@@ -3,6 +3,9 @@ window.THREE = require('three');
 var baseVs = require('../shaders/baseVs.glsl');
 var bufferFs = require('../shaders/bufferFs.glsl');
 var renderFS = require('../shaders/renderFS.glsl');
+var gridVs = require('../shaders/gridVs.glsl');
+var gridFs = require('../shaders/gridFS.glsl');
+
 
 var Main = function( options ) {
 	this.element = document.getElementById('three');
@@ -10,10 +13,11 @@ var Main = function( options ) {
 
 	this.mouseIsDown = 0;
 
-	this.buffer0 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
-	this.buffer1 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
-	this.bufferA = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
-	this.bufferB = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter} );
+	this.buffer0 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { type: THREE.FloatType } );
+	this.buffer1 = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { type: THREE.FloatType } );
+	this.bufferA = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { type: THREE.FloatType } );
+	this.bufferB = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { type: THREE.FloatType } );
+	this.bufferC = new THREE.WebGLRenderTarget( this.element.offsetWidth, this.element.offsetHeight, { type: THREE.FloatType } );
 
 	// buffer A
 	this.bufferAscene = new THREE.Scene();
@@ -75,6 +79,33 @@ var Main = function( options ) {
 	this.element.addEventListener('mousedown', this.onMousedown.bind( this ) );
 	this.element.addEventListener('mouseup', this.onMouseup.bind( this ) );
 
+	var geometry = new THREE.BufferGeometry();
+
+	var hParticles = Math.floor( this.element.offsetWidth / 5 );
+	var vParticles = Math.floor( this.element.offsetHeight / 5 );
+	var numParticles = hParticles * vParticles;
+
+	var position = [];
+
+	for( var i = 0 ; i < hParticles ; i++ ) for( var j = 0 ; j < vParticles ; j++ ) position.push( i * 5 - this.element.offsetWidth / 2, j * 5 - this.element.offsetHeight / 2, 1 );
+	geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( position ), 3 ) );
+
+	var material = new THREE.ShaderMaterial( {
+		uniforms : {
+			iChannel0: { value: this.bufferA.texture },
+			res : { value : new THREE.Vector2( this.element.offsetWidth, this.element.offsetWidth ) },
+			modSize : { value : 2 }
+		},
+		transparent : true,
+		vertexShader: gridVs,
+		fragmentShader: gridFs,
+		depthTest:  true,
+		depthWrite: false
+	} );
+
+	this.pointMesh = new THREE.Points( geometry, material );
+	this.scene.add(this.pointMesh);
+
 	this.resize();
 	this.step();
 }
@@ -90,7 +121,6 @@ Main.prototype.onMouseup = function( e ){
 }
 
 Main.prototype.onMousemove = function( e ){
-	// console.log(e.offsetX, e.offsetY)
 	this.mouseX = e.offsetX;
 	this.mouseY = Math.abs( e.offsetY - this.element.offsetHeight );
 	this.updateMouseUniforms();
@@ -130,6 +160,8 @@ Main.prototype.step = function( time ) {
 		this.renderer.render( this.bufferBscene, this.bufferBcam, this.bufferB );
 		this.bufferBplane.material.uniforms.iChannel0.value = this.bufferB.texture;
 		this.bufferBplane.material.uniforms.iChannel1.value = this.bufferA.texture;
+
+		// this.renderPlane.material.uniforms.iChannel0.value = this.bufferA.texture;
 	} else {
 		this.renderer.render( this.bufferAscene, this.bufferAcam, this.bufferA );
 		this.bufferAplane.material.uniforms.iChannel0.value = this.bufferA.texture;
@@ -138,12 +170,13 @@ Main.prototype.step = function( time ) {
 		this.renderer.render( this.bufferBscene, this.bufferBcam, this.buffer1 );
 		this.bufferBplane.material.uniforms.iChannel0.value = this.buffer1.texture;
 		this.bufferBplane.material.uniforms.iChannel1.value = this.buffer0.texture;
+
+		// this.renderPlane.material.uniforms.iChannel0.value = this.buffer0.texture;
 	}
 
-	this.bufferAplane.material.uniforms.frame.value += 1;
-	this.bufferBplane.material.uniforms.frame.value += 1;
+	this.bufferAplane.material.uniforms.frame.value = this.bufferBplane.material.uniforms.frame.value += 1;
 
-	
+	// this.renderer.render( this.scene, this.camera, this.bufferC );
 	
 	this.renderer.render( this.scene, this.camera );
 };
